@@ -136,6 +136,8 @@ def generate_modern_pdf(resume_data):
                     skills_lines.append(f'<b>{key.title()}:</b>  {", ".join(_safe_list(val))}')
         elif isinstance(skills, list):
             skills_lines.append(', '.join(skills))
+        elif isinstance(skills, str):
+            skills_lines.append(skills)
 
         for line in skills_lines:
             story.append(Paragraph(line, styles['body']))
@@ -147,6 +149,8 @@ def generate_modern_pdf(resume_data):
         story.append(_section_header('PROFESSIONAL EXPERIENCE', styles))
         for exp in experience:
             if not isinstance(exp, dict):
+                story.append(Paragraph(_safe_str(exp), styles['body']))
+                story.append(Spacer(1, 4))
                 continue
             title = _safe_str(exp.get('title', ''))
             company = _safe_str(exp.get('company', ''))
@@ -182,6 +186,8 @@ def generate_modern_pdf(resume_data):
         story.append(_section_header('PROJECTS', styles))
         for proj in projects:
             if not isinstance(proj, dict):
+                story.append(Paragraph(_safe_str(proj), styles['body']))
+                story.append(Spacer(1, 4))
                 continue
             name_p = _safe_str(proj.get('name', ''))
             tech = _safe_str(proj.get('tech', ''))
@@ -310,6 +316,8 @@ def generate_corporate_pdf(resume_data):
                     ))
         elif isinstance(skills, list):
             story.append(Paragraph(', '.join(skills), styles['corp_body']))
+        elif isinstance(skills, str):
+            story.append(Paragraph(skills, styles['corp_body']))
         story.append(Spacer(1, 8))
 
     # ── EXPERIENCE ──────────────────────────────────────────────────────────── #
@@ -319,6 +327,8 @@ def generate_corporate_pdf(resume_data):
         story.append(HRFlowable(width="100%", thickness=0.5, color=CORP_LINE, spaceAfter=4))
         for exp in experience:
             if not isinstance(exp, dict):
+                story.append(Paragraph(_safe_str(exp), styles['corp_body']))
+                story.append(Spacer(1, 4))
                 continue
             title = _safe_str(exp.get('title', ''))
             company = _safe_str(exp.get('company', ''))
@@ -351,6 +361,8 @@ def generate_corporate_pdf(resume_data):
         story.append(HRFlowable(width="100%", thickness=0.5, color=CORP_LINE, spaceAfter=4))
         for proj in projects:
             if not isinstance(proj, dict):
+                story.append(Paragraph(_safe_str(proj), styles['corp_body']))
+                story.append(Spacer(1, 4))
                 continue
             name_p = _safe_str(proj.get('name', ''))
             tech = _safe_str(proj.get('tech', ''))

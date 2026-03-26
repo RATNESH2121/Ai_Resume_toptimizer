@@ -339,8 +339,8 @@
     <ul class="loading-steps">
       <li id="step1" class="active">📥 Extracting text from documents</li>
       <li id="step2">🔍 Matching keywords against JD</li>
-      <li id="step3">🧠 AI scoring (Gemini 1.5 Flash)</li>
-      <li id="step4">✍️ Generating optimized resume</li>
+      <li id="step3">🧠 Deep skills taxonomy analysis (400+ skills)</li>
+      <li id="step4">🤖 AI semantic analysis (Mistral-7B via HuggingFace)</li>
       <li id="step5">📄 Preparing PDF templates</li>
     </ul>
   </div>
@@ -369,16 +369,37 @@
       <div class="breakdown-grid" id="breakdown-grid"></div>
     </div>
 
+    <!-- AI BADGE -->
+    <div id="ai-badge" style="text-align:center;margin-bottom:1rem;"></div>
+
+    <!-- CRITICAL GAPS -->
+    <div class="result-section" id="critical-gaps-section">
+      <div class="result-section-title">🚨 Critical Gaps (Fix These First)</div>
+      <div id="critical-gaps-list"></div>
+    </div>
+
     <!-- MISSING KEYWORDS -->
     <div class="result-section">
-      <div class="result-section-title">❌ Missing Keywords</div>
+      <div class="result-section-title">❌ Missing Required Skills</div>
       <div class="keyword-pills" id="missing-keywords"></div>
+    </div>
+
+    <!-- MISSING BY CATEGORY -->
+    <div class="result-section" id="missing-cat-section">
+      <div class="result-section-title">🗂️ Skills Gap by Category</div>
+      <div id="missing-by-category"></div>
     </div>
 
     <!-- MATCHED KEYWORDS -->
     <div class="result-section">
       <div class="result-section-title">✅ Matched Keywords</div>
       <div class="keyword-pills" id="matched-keywords"></div>
+    </div>
+
+    <!-- SECTION CHECKLIST -->
+    <div class="result-section">
+      <div class="result-section-title">📋 Resume Section Checklist</div>
+      <div id="section-checklist" style="display:flex;flex-wrap:wrap;gap:0.6rem;"></div>
     </div>
 
     <!-- STRENGTHS -->
@@ -389,7 +410,7 @@
 
     <!-- FEEDBACK -->
     <div class="result-section">
-      <div class="result-section-title">💡 Specific Improvements</div>
+      <div class="result-section-title">💡 Section-by-Section Improvements</div>
       <ul class="feedback-list" id="feedback-list"></ul>
     </div>
 
@@ -414,7 +435,7 @@
 </div>
 
 <footer>
-  Built with ❤️ by Team DrCode &nbsp;|&nbsp; Powered by Google Gemini AI &nbsp;|&nbsp; Hackathon 2025
+  Built with ❤️ by Team DrCode &nbsp;|&nbsp; Powered by Mistral-7B via HuggingFace &nbsp;|&nbsp; Hackathon 2025
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -494,9 +515,17 @@ function renderResults(data) {
   const optScore = parseFloat(data.optimized_score || 0).toFixed(1);
   document.getElementById('res-score').textContent = score;
   document.getElementById('res-match').textContent = `Match: ${data.match_percent || 0}%`;
-  document.getElementById('res-role').textContent = data.role_detected ? `🎯 Role: ${data.role_detected}` : '';
+  const roleLabel = data.role_detected ? `🎯 Role: ${data.role_detected}` : '';
+  const lvl = data.experience_level ? ` | 📈 Level: ${data.experience_level}` : '';
+  document.getElementById('res-role').textContent = roleLabel + lvl;
   document.getElementById('ba-old').textContent = score + '/10';
   document.getElementById('ba-new').textContent = optScore + '/10';
+
+  // AI Badge
+  const badge = data.ai_powered
+    ? `<span style="background:rgba(0,180,216,0.15);border:1px solid rgba(0,180,216,0.4);color:#00b4d8;padding:0.3rem 0.9rem;border-radius:20px;font-size:0.75rem;font-weight:700;">🤖 AI-Powered Analysis (Mistral-7B)</span>`
+    : `<span style="background:rgba(255,171,64,0.1);border:1px solid rgba(255,171,64,0.3);color:#ffab40;padding:0.3rem 0.9rem;border-radius:20px;font-size:0.75rem;font-weight:700;">⚡ Deep Structural Analysis (400+ skills taxonomy)</span>`;
+  document.getElementById('ai-badge').innerHTML = badge;
 
   // Breakdown
   const bd = data.breakdown || {};
@@ -506,23 +535,61 @@ function renderResults(data) {
     { label:'ATS Keywords', score: bd.keywords_ats||0, max:20, color:'#00e676' },
     { label:'Structure', score: bd.structure_format||0, max:10, color:'#ffab40' },
   ];
-  const bdGrid = document.getElementById('breakdown-grid');
-  bdGrid.innerHTML = bdItems.map(item => `
+  document.getElementById('breakdown-grid').innerHTML = bdItems.map(item => `
     <div class="breakdown-card">
       <div class="bd-label"><span>${item.label}</span><span>${item.score}/${item.max}</span></div>
       <div class="bd-score" style="color:${item.color}">${item.score}</div>
       <div class="bd-bar-track"><div class="bd-bar-fill" style="width:${(item.score/item.max)*100}%;background:${item.color}"></div></div>
     </div>`).join('');
 
+  // Critical Gaps
+  const critGaps = data.critical_gaps || [];
+  if (critGaps.length) {
+    document.getElementById('critical-gaps-list').innerHTML = critGaps.map(g=>`
+      <div style="display:flex;gap:0.7rem;align-items:flex-start;padding:0.65rem 1rem;border-left:3px solid var(--red);background:rgba(255,82,82,0.05);border-radius:0 8px 8px 0;margin-bottom:0.5rem;">
+        <span>🚨</span><span style="font-size:0.87rem;line-height:1.5;">${g}</span></div>`).join('');
+  } else {
+    document.getElementById('critical-gaps-section').style.display='none';
+  }
+
   // Missing keywords
   const missing = data.missing_keywords || [];
   document.getElementById('missing-keywords').innerHTML =
-    missing.length ? missing.map(k=>`<span class="pill pill-missing">❌ ${k}</span>`).join('') : '<span style="color:var(--green);font-size:0.85rem">✅ No critical keywords missing!</span>';
+    missing.length ? missing.map(k=>`<span class="pill pill-missing">❌ ${k}</span>`).join('') : '<span style="color:var(--green);font-size:0.85rem">✅ No missing required keywords!</span>';
+
+  // Missing by category
+  const missingByCat = data.missing_by_category || {};
+  const catKeys = Object.keys(missingByCat);
+  if (catKeys.length) {
+    const catLabels = { devops_cloud:'DevOps/Cloud', ai_ml:'AI/ML', languages:'Languages', frontend:'Frontend', backend:'Backend', databases:'Databases', tools_practices:'Tools', mobile:'Mobile', security:'Security', data_engineering:'Data Eng' };
+    document.getElementById('missing-by-category').innerHTML = catKeys.map(cat => `
+      <div style="margin-bottom:0.7rem;">
+        <span style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;">${catLabels[cat]||cat}:</span>
+        <span style="margin-left:0.5rem;">${missingByCat[cat].map(k=>`<span class="pill pill-missing">❌ ${k}</span>`).join(' ')}</span>
+      </div>`).join('');
+  } else {
+    document.getElementById('missing-cat-section').style.display='none';
+  }
 
   // Matched keywords
   const matched = (data.keyword_analysis || {}).matched_keywords || [];
   document.getElementById('matched-keywords').innerHTML =
     matched.slice(0,15).map(k=>`<span class="pill pill-matched">✅ ${k}</span>`).join('') || '<span style="color:var(--muted);font-size:0.85rem">No matches detected</span>';
+
+  // Section checklist
+  const sec = data.section_analysis || {};
+  const checkItems = [
+    { label: 'Summary', key: 'has_summary' },
+    { label: 'Skills', key: 'has_skills_section' },
+    { label: 'Experience', key: 'has_experience' },
+    { label: 'Projects', key: 'has_projects' },
+    { label: 'Education', key: 'has_education' },
+    { label: 'Certifications', key: 'has_certifications' },
+  ];
+  document.getElementById('section-checklist').innerHTML = checkItems.map(item => {
+    const ok = sec[item.key];
+    return `<span style="padding:0.3rem 0.8rem;border-radius:20px;font-size:0.75rem;font-weight:700;background:${ok?'rgba(0,230,118,0.12)':'rgba(255,82,82,0.1)'};color:${ok?'var(--green)':'var(--red)'};border:1px solid ${ok?'rgba(0,230,118,0.25)':'rgba(255,82,82,0.2)'}">${ok?'✅':'❌'} ${item.label}</span>`;
+  }).join('') + `<span style="padding:0.3rem 0.8rem;border-radius:20px;font-size:0.75rem;background:rgba(38,208,206,0.1);color:var(--cyan);border:1px solid rgba(38,208,206,0.2);">📊 ${sec.quantified_achievements_count||0} quantified bullets</span>`;
 
   // Strengths
   const strengths = data.strengths || [];
@@ -534,11 +601,11 @@ function renderResults(data) {
   const feedback = data.feedback || [];
   document.getElementById('feedback-list').innerHTML = feedback.map((f,i)=>`
     <li class="feedback-item">
-      <span class="feedback-icon">${['💡','🎯','⚡','✍️','🔧'][i%5]}</span>
-      <span class="feedback-text">${f}</span>
+      <span class="feedback-icon">${['💡','🎯','⚡','✍️','🔧','📝'][i%6]}</span>
+      <span class="feedback-text">${f.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</span>
     </li>`).join('');
 
-  showToast('✅ Analysis complete!', 'success');
+  showToast('✅ Deep analysis complete!', 'success');
 }
 
 async function downloadPDF(template) {
