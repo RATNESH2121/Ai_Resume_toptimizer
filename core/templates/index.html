@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ResumeAI — ATS Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1a2980;
+    --cyan: #26d0ce;
+    --accent: #00b4d8;
+    --dark: #0f0f1a;
+    --card: #1a1a2e;
+    --glass: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #e8e8f0;
+    --muted: #888aaa;
+    --green: #00e676;
+    --red: #ff5252;
+    --yellow: #ffab40;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND AURORA */
+  body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+    background: radial-gradient(ellipse at 20% 20%, rgba(26,41,128,0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(38,208,206,0.15) 0%, transparent 60%),
+                var(--dark);
+  }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,15,26,0.8);
+  }
+  .logo { font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav-tag { font-size: 0.72rem; background: linear-gradient(135deg, var(--navy), var(--cyan)); padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: 600; color: white; }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 4rem 2rem 3rem;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--glass); border: 1px solid var(--border);
+    padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; color: var(--cyan);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; }
+  .hero h1 span { background: linear-gradient(135deg, var(--cyan), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { color: var(--muted); font-size: 1.05rem; max-width: 520px; margin: 0 auto 2rem; line-height: 1.6; }
+
+  /* STATS ROW */
+  .stats { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 3rem; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--cyan), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* UPLOAD AREA */
+  .main-container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(16px);
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: rgba(38,208,206,0.3); }
+
+  .card-title {
+    font-size: 0.85rem; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--cyan); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media(max-width:620px){ .upload-grid { grid-template-columns: 1fr; } }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 1.8rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragging {
+    border-color: var(--cyan);
+    background: rgba(38,208,206,0.04);
+  }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .upload-label { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+  .upload-sub { font-size: 0.78rem; color: var(--muted); }
+  .upload-filename { font-size: 0.78rem; color: var(--cyan); margin-top: 0.5rem; font-weight: 600; }
+
+  .text-area-wrapper { margin-bottom: 1rem; }
+  .text-area-wrapper label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.4rem; }
+  textarea {
+    width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-family: 'Inter', sans-serif;
+    font-size: 0.85rem; padding: 0.8rem 1rem; resize: vertical; min-height: 80px;
+    transition: border-color 0.3s;
+  }
+  textarea:focus { outline: none; border-color: var(--cyan); }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--navy), var(--cyan));
+    border: none; border-radius: 12px;
+    color: white; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all 0.3s; letter-spacing: 0.5px;
+    display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+  }
+  .analyze-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(38,208,206,0.3); }
+  .analyze-btn:active { transform: translateY(0); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* LOADING */
+  .loading-wrap { display: none; text-align: center; padding: 2rem; }
+  .spinner {
+    width: 48px; height: 48px; border: 3px solid var(--border);
+    border-top-color: var(--cyan); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--muted); font-size: 0.9rem; }
+  .loading-steps { list-style: none; margin-top: 1rem; }
+  .loading-steps li { font-size: 0.82rem; color: var(--muted); padding: 0.2rem 0; transition: color 0.3s; }
+  .loading-steps li.active { color: var(--cyan); font-weight: 600; }
+
+  /* RESULTS */
+  #results { display: none; margin-top: 2rem; }
+
+  /* SCORE CARDS */
+  .score-hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #16213e 100%);
+    border-radius: 20px; padding: 2.5rem;
+    text-align: center; margin-bottom: 1.5rem;
+    border: 1px solid rgba(38,208,206,0.2);
+    position: relative; overflow: hidden;
+  }
+  .score-hero::before {
+    content: '';
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at center, rgba(38,208,206,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .score-main { font-size: 5rem; font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, var(--cyan), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .score-label { color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
+  .score-match { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+  .score-role { font-size: 0.85rem; color: var(--cyan); }
+
+  /* BEFORE/AFTER */
+  .before-after {
+    display: flex; align-items: center; justify-content: center;
+    gap: 1rem; margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .ba-score { font-weight: 700; }
+  .ba-old { color: var(--red); }
+  .ba-new { color: var(--green); }
+  .ba-arrow { color: var(--muted); font-size: 1.2rem; }
+
+  /* BREAKDOWN BARS */
+  .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  @media(max-width:500px){ .breakdown-grid { grid-template-columns: 1fr; } }
+
+  .breakdown-card {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.2rem;
+  }
+  .bd-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.5rem; display: flex; justify-content: space-between; }
+  .bd-score { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .bd-bar-track { height: 5px; background: var(--border); border-radius: 3px; }
+  .bd-bar-fill { height: 5px; border-radius: 3px; transition: width 1s ease; }
+
+  /* SECTIONS */
+  .result-section { margin-bottom: 1.5rem; }
+  .result-section-title {
+    font-size: 0.8rem; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .feedback-list { list-style: none; }
+  .feedback-item {
+    display: flex; gap: 0.8rem; align-items: flex-start;
+    padding: 0.75rem 1rem;
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 0.6rem;
+    transition: border-color 0.3s;
+  }
+  .feedback-item:hover { border-color: rgba(38,208,206,0.3); }
+  .feedback-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .feedback-text { font-size: 0.88rem; line-height: 1.5; }
+
+  .strength-item {
+    display: flex; gap: 0.7rem; align-items: flex-start;
+    padding: 0.6rem 1rem;
+    border-left: 3px solid var(--green);
+    background: rgba(0,230,118,0.04);
+    border-radius: 0 8px 8px 0; margin-bottom: 0.5rem;
+  }
+  .strength-text { font-size: 0.87rem; color: var(--text); line-height: 1.5; }
+
+  .keyword-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .pill {
+    padding: 0.25rem 0.7rem; border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600;
+  }
+  .pill-missing { background: rgba(255,82,82,0.12); color: var(--red); border: 1px solid rgba(255,82,82,0.25); }
+  .pill-matched { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+
+  /* PDF DOWNLOAD */
+  .pdf-section {
+    background: linear-gradient(135deg, rgba(26,41,128,0.4), rgba(38,208,206,0.1));
+    border: 1px solid rgba(38,208,206,0.25);
+    border-radius: 20px; padding: 2rem; text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .pdf-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .pdf-sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .template-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .template-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px; border: none;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-modern { background: linear-gradient(135deg, var(--navy), var(--accent)); color: white; }
+  .btn-modern:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,180,216,0.4); }
+  .btn-corporate { background: var(--glass); border: 1px solid var(--border); color: var(--text); }
+  .btn-corporate:hover { border-color: var(--cyan); transform: translateY(-2px); }
+
+  /* FOOTER */
+  footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--border); }
+
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.5rem;
+    font-size: 0.85rem; z-index: 999;
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.3s;
+    max-width: 300px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">⚡ ResumeAI</div>
+  <span class="nav-tag">Hackathon Edition</span>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">🔥 AI-Powered ATS Optimizer</div>
+  <h1>Get Your Resume<br><span>Ranked #1 by ATS</span></h1>
+  <p>Upload your Job Description and Resume. Get an ATS score, specific feedback, and a fully optimized resume PDF in seconds.</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">10x</div><div class="stat-label">More Interviews</div></div>
+    <div class="stat"><div class="stat-num">&lt;30s</div><div class="stat-label">Analysis Time</div></div>
+    <div class="stat"><div class="stat-num">2</div><div class="stat-label">PDF Templates</div></div>
+  </div>
+</section>
+
+<div class="main-container">
+
+  <!-- UPLOAD CARD -->
+  <div class="card" id="upload-card">
+    <div class="card-title">📄 Upload Documents</div>
+
+    <div class="upload-grid">
+      <div>
+        <div class="upload-zone" id="jd-zone">
+          <input type="file" id="jd-file" accept=".pdf,.docx,.txt" />
+          <div class="upload-icon">📋</div>
+          <div class="upload-label">Job Description</div>
+          <div class="upload-sub">Drag & drop or click — PDF, DOCX, TXT</div>
+          <div class="upload-filename" id="jd-name"></div>
+        </div>
+        <div class="text-area-wrapper" style="margin-top:0.8rem;">
+          <label>Or paste JD text here</label>
+          <textarea id="jd-text" placeholder="Paste the job description text..."></textarea>
+        </div>
+      </div>
+
+      <div>
+        <div class="upload-zone" id="resume-zone">
+          <input type="file" id="resume-file" accept=".pdf,.docx,.txt" />
+          <div class="upload-icon">📝</div>
+          <div class="upload-label">Your Resume</div>
+          <div class="upload-sub">Drag & drop or click — PDF, DOCX, TXT</div>
+          <div class="upload-filename" id="resume-name"></div>
+        </div>
+        <div class="text-area-wrapper" style="margin-top:0.8rem;">
+          <label>Or paste Resume text here</label>
+          <textarea id="resume-text" placeholder="Paste your resume text..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyze-btn" onclick="analyzeResume()">
+      <span>⚡</span> Analyze & Score My Resume
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading-wrap" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">AI is analyzing your resume...</div>
+    <ul class="loading-steps">
+      <li id="step1" class="active">📥 Extracting text from documents</li>
+      <li id="step2">🔍 Matching keywords against JD</li>
+      <li id="step3">🧠 AI scoring (Gemini 1.5 Flash)</li>
+      <li id="step4">✍️ Generating optimized resume</li>
+      <li id="step5">📄 Preparing PDF templates</li>
+    </ul>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <!-- SCORE HERO -->
+    <div class="score-hero">
+      <div class="score-label">ATS SCORE</div>
+      <div class="score-main" id="res-score">—</div>
+      <div class="score-label">out of 10</div>
+      <div class="score-match" id="res-match">Match: —%</div>
+      <div class="score-role" id="res-role"></div>
+      <div class="before-after">
+        <span class="ba-score ba-old" id="ba-old">—/10</span>
+        <span class="ba-arrow">→</span>
+        <span class="ba-score ba-new" id="ba-new">—/10</span>
+        <span style="color:var(--muted);font-size:0.78rem;">after optimization</span>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="result-section">
+      <div class="result-section-title">📊 Score Breakdown</div>
+      <div class="breakdown-grid" id="breakdown-grid"></div>
+    </div>
+
+    <!-- MISSING KEYWORDS -->
+    <div class="result-section">
+      <div class="result-section-title">❌ Missing Keywords</div>
+      <div class="keyword-pills" id="missing-keywords"></div>
+    </div>
+
+    <!-- MATCHED KEYWORDS -->
+    <div class="result-section">
+      <div class="result-section-title">✅ Matched Keywords</div>
+      <div class="keyword-pills" id="matched-keywords"></div>
+    </div>
+
+    <!-- STRENGTHS -->
+    <div class="result-section" id="strengths-section">
+      <div class="result-section-title">💪 Your Strengths</div>
+      <div id="strengths-list"></div>
+    </div>
+
+    <!-- FEEDBACK -->
+    <div class="result-section">
+      <div class="result-section-title">💡 Specific Improvements</div>
+      <ul class="feedback-list" id="feedback-list"></ul>
+    </div>
+
+    <!-- PDF DOWNLOAD -->
+    <div class="pdf-section">
+      <div class="pdf-title">🚀 Download Optimized Resume</div>
+      <div class="pdf-sub">Your resume has been rewritten by AI to maximize ATS score</div>
+      <div class="template-btns">
+        <button class="template-btn btn-modern" onclick="downloadPDF('modern')">
+          🎨 Modern Clean (1-Page)
+        </button>
+        <button class="template-btn btn-corporate" onclick="downloadPDF('corporate')">
+          🏢 Corporate Classic (2-Page)
+        </button>
+      </div>
+    </div>
+
+    <button class="analyze-btn" onclick="resetForm()" style="background: var(--glass); border: 1px solid var(--border);">
+      🔄 Analyze Another Resume
+    </button>
+  </div>
+</div>
+
+<footer>
+  Built with ❤️ by Team DrCode &nbsp;|&nbsp; Powered by Google Gemini AI &nbsp;|&nbsp; Hackathon 2025
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let sessionId = null;
+let resumeData = null;
+
+// File input display
+document.getElementById('jd-file').addEventListener('change', function() {
+  if(this.files[0]) document.getElementById('jd-name').textContent = '✅ ' + this.files[0].name;
+});
+document.getElementById('resume-file').addEventListener('change', function() {
+  if(this.files[0]) document.getElementById('resume-name').textContent = '✅ ' + this.files[0].name;
+});
+
+// Drag and drop
+['jd-zone','resume-zone'].forEach(id => {
+  const zone = document.getElementById(id);
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragging'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+  zone.addEventListener('drop', () => zone.classList.remove('dragging'));
+});
+
+async function analyzeResume() {
+  const jdFile = document.getElementById('jd-file').files[0];
+  const resumeFile = document.getElementById('resume-file').files[0];
+  const jdText = document.getElementById('jd-text').value.trim();
+  const resumeText = document.getElementById('resume-text').value.trim();
+
+  if (!jdFile && !jdText) { showToast('❌ Please provide a Job Description', 'error'); return; }
+  if (!resumeFile && !resumeText) { showToast('❌ Please provide your Resume', 'error'); return; }
+
+  // Show loading
+  document.getElementById('upload-card').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  animateSteps();
+
+  const formData = new FormData();
+  if (jdFile) formData.append('jd_file', jdFile);
+  else formData.append('jd_text', jdText);
+  if (resumeFile) formData.append('resume_file', resumeFile);
+  else formData.append('resume_text', resumeText);
+
+  try {
+    const res = await fetch('/api/score/', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.error) { showToast('❌ ' + data.error, 'error'); resetForm(); return; }
+
+    sessionId = data.session_id;
+    resumeData = data.optimized_resume;
+    renderResults(data);
+
+  } catch(e) {
+    showToast('❌ Connection error. Is the server running?', 'error');
+    resetForm();
+  }
+}
+
+function animateSteps() {
+  const steps = ['step1','step2','step3','step4','step5'];
+  let i = 0;
+  const timer = setInterval(() => {
+    steps.forEach(s => document.getElementById(s).classList.remove('active'));
+    if (i < steps.length) { document.getElementById(steps[i]).classList.add('active'); i++; }
+    else clearInterval(timer);
+  }, 5000);
+}
+
+function renderResults(data) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+
+  const score = parseFloat(data.ats_score || 0).toFixed(1);
+  const optScore = parseFloat(data.optimized_score || 0).toFixed(1);
+  document.getElementById('res-score').textContent = score;
+  document.getElementById('res-match').textContent = `Match: ${data.match_percent || 0}%`;
+  document.getElementById('res-role').textContent = data.role_detected ? `🎯 Role: ${data.role_detected}` : '';
+  document.getElementById('ba-old').textContent = score + '/10';
+  document.getElementById('ba-new').textContent = optScore + '/10';
+
+  // Breakdown
+  const bd = data.breakdown || {};
+  const bdItems = [
+    { label:'Skills Match', score: bd.skills_match||0, max:40, color:'#26d0ce' },
+    { label:'Experience', score: bd.experience_relevance||0, max:30, color:'#00b4d8' },
+    { label:'ATS Keywords', score: bd.keywords_ats||0, max:20, color:'#00e676' },
+    { label:'Structure', score: bd.structure_format||0, max:10, color:'#ffab40' },
+  ];
+  const bdGrid = document.getElementById('breakdown-grid');
+  bdGrid.innerHTML = bdItems.map(item => `
+    <div class="breakdown-card">
+      <div class="bd-label"><span>${item.label}</span><span>${item.score}/${item.max}</span></div>
+      <div class="bd-score" style="color:${item.color}">${item.score}</div>
+      <div class="bd-bar-track"><div class="bd-bar-fill" style="width:${(item.score/item.max)*100}%;background:${item.color}"></div></div>
+    </div>`).join('');
+
+  // Missing keywords
+  const missing = data.missing_keywords || [];
+  document.getElementById('missing-keywords').innerHTML =
+    missing.length ? missing.map(k=>`<span class="pill pill-missing">❌ ${k}</span>`).join('') : '<span style="color:var(--green);font-size:0.85rem">✅ No critical keywords missing!</span>';
+
+  // Matched keywords
+  const matched = (data.keyword_analysis || {}).matched_keywords || [];
+  document.getElementById('matched-keywords').innerHTML =
+    matched.slice(0,15).map(k=>`<span class="pill pill-matched">✅ ${k}</span>`).join('') || '<span style="color:var(--muted);font-size:0.85rem">No matches detected</span>';
+
+  // Strengths
+  const strengths = data.strengths || [];
+  document.getElementById('strengths-list').innerHTML = strengths.map(s=>`
+    <div class="strength-item"><span>✅</span><span class="strength-text">${s}</span></div>`).join('');
+  if(!strengths.length) document.getElementById('strengths-section').style.display='none';
+
+  // Feedback
+  const feedback = data.feedback || [];
+  document.getElementById('feedback-list').innerHTML = feedback.map((f,i)=>`
+    <li class="feedback-item">
+      <span class="feedback-icon">${['💡','🎯','⚡','✍️','🔧'][i%5]}</span>
+      <span class="feedback-text">${f}</span>
+    </li>`).join('');
+
+  showToast('✅ Analysis complete!', 'success');
+}
+
+async function downloadPDF(template) {
+  if (!resumeData && !sessionId) { showToast('❌ Please run analysis first', 'error'); return; }
+  showToast('⏳ Generating PDF...', '');
+
+  try {
+    const res = await fetch('/api/generate-pdf/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ session_id: sessionId, template, resume_data: resumeData }),
+    });
+
+    if (!res.ok) { const e = await res.json(); showToast('❌ '+e.error, 'error'); return; }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `optimized_resume_${template}.pdf`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast('✅ PDF downloaded!', 'success');
+  } catch(e) {
+    showToast('❌ PDF generation failed', 'error');
+  }
+}
+
+function resetForm() {
+  document.getElementById('upload-card').style.display = 'block';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('jd-name').textContent = '';
+  document.getElementById('resume-name').textContent = '';
+  document.getElementById('jd-text').value = '';
+  document.getElementById('resume-text').value = '';
+  document.getElementById('jd-file').value = '';
+  document.getElementById('resume-file').value = '';
+  sessionId = null; resumeData = null;
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
