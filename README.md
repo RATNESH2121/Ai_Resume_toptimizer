@@ -1,5 +1,15 @@
-# 🚀 AI Resume Optimizer & ATS Scorer
+```
+---
+title: Ai Resume Optimizer
+emoji: 🚀
+colorFrom: blue
+colorTo: cyan
+sdk: docker
+pinned: false
+app_port: 7860
+---
 
+# 🤖 ResumeAI Optimizer — ATS Scoring & AI Optimization
 An AI-powered platform to help job seekers optimize their resumes against specific job descriptions. Features a web dashboard for point-and-click scoring and a Telegram bot for on-the-go optimization and PDF delivery.
 
 ## 🌟 Key Features
